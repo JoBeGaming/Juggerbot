@@ -34,7 +34,7 @@ maxlines = 0
  
 # Talks to the user
 print("This is the Assembler for the Juggernaut CPU, made entirely in Minecraft.")
-print("Juggernaut has been built by: Jobe, WildScaryFox, JediZach, Saturnxcode and Death_Slice")
+print("Juggernaut has been built by: Jobe, WildScaryFox, JediZach, Saturnxcode,tarmalot and Death_Slice")
 wait(.5)
 print("How many Lines of Code do you need (the maximum is 65536 lines)?")
 print("It is not suggested to go above 500 lines though.")
