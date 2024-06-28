@@ -1,5 +1,5 @@
 #This is the Assembler for the Juggernaut CPU in Minecraft
-#Build by Jobe, WildScaryFox, JediZach, Saturnxcode and Death_Slice
+#Build by Jobe, WildScaryFox, JediZach, Saturnxcode, Tarmalot and Death_Slice
 #Code written by Jobe
 
 
