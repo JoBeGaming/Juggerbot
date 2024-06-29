@@ -52,8 +52,6 @@ def LineNumber():
         print("Please try again")
         LineNumber()
 
-
-
 LineNumber()
  
 # Helper function to convert operand to binary
