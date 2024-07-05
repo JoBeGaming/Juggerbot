@@ -11,7 +11,7 @@ import time as t
 # @ -> Ram Address
 # & -> I/O Port Address
 # / -> No Operand in that position
-# : -> Immediate
+# i -> Immediate
  
 # ISA OpCodeList
 op_code_list = {
