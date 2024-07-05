@@ -1,0 +1,222 @@
+# This is the Assembler for the Juggernaut CPU in Minecraft
+# Build by Jobe, WildScaryFox, JediZach, Saturnxcode, Tarmalot and Death_Slice
+# Code written by Jobe
+
+
+# Imports
+import time as t
+
+# Prefixes
+# $ -> Register Address  #todo replace $ with r1...?
+# @ -> Ram Address
+# & -> I/O Port Address
+# / -> No Operand in that position
+# : -> Immediate
+ 
+# ISA OpCodeList
+op_code_list = {
+    'nop': '0', 'add': '1', 'sub': '2', 'nota': '3', 'neg': '4','imp': '5', 'nimp': '6', 'and': '7', 
+    'or': '8','xor': '9','nand': '10', 'nor': '11', 'xnor': '12', 'bsu': '13', 'bsd': '14','bsur': '15',
+    'bsdr': '16','addca': '17','addi':'18','jmp': '19','branch': '20', 'jmpr': '21', 'branchr': '22','ldi': '23',
+    'mov': '24','rldi': '25','str': '26','ldr': '27','pin': '28','pout': '29','pinr': '30','poutr': '31',
+    'incr': '32','decr': '33','mult': '34','div': '35','mod': '36','sqr': '37','sqrt': '38','cmpr': '39',
+    'lflgre': '40','lflgra': '41','lpre': '42','rpre': '43','lpra': '44','rpra': '45','psh': '46','pop': '47',
+    'call': '48','rtrn': '49','rnd': '50','swp': '51','': '52','': '53','': '54','': '55',
+    '': '56','': '57','': '58','': '59','': '60','': '61','stl': '62','hlt': '63'
+}
+ 
+# ISA Contents
+operand_list = {
+   'nop': {'pos_1':'/','pos_2':'/','pos_3':'/'},'add': {'pos_1':'$','pos_2':'$','pos_3':'$'},'sub': {'pos_1':'$','pos_2':'$','pos_3':'$'},'nota': {'pos_1':'$','pos_2':'/','pos_3':'$'},'neg': {'pos_1':'$','pos_2':'/','pos_3':'$'},'imp': {'pos_1':'$','pos_2':'$','pos_3':'$'},'nimp': {'pos_1':'$','pos_2':'$','pos_3':'$'},'and': {'pos_1':'$','pos_2':'$','pos_3':'$'},
+    'or': {'pos_1':'$','pos_2':'$','pos_3':'$'},'xor': {'pos_1':'$','pos_2':'$','pos_3':'$'},'nand': {'pos_1':'$','pos_2':'$','pos_3':'$'},'nor': {'pos_1':'$','pos_2':'$','pos_3':'$'},'xnor': {'pos_1':'$','pos_2':'$','pos_3':'$'},'bsu': {'pos_1':'$','pos_2':'$','pos_3':'$'},'bsd': {'pos_1':'$','pos_2':'$','pos_3':'$'},'bsur': {'pos_1':'$','pos_2':'$','pos_3':'$'},
+    'bsdr': {'pos_1':'$','pos_2':'$','pos_3':'$'},'addca': {'pos_1':'$','pos_2':'$','pos_3':'$'},'addi': {'pos_1':'i','pos_2':'$','pos_3':'$'},'jmp': {'pos_1':'i','pos_2':'i','pos_3':'/'},'branch': {'pos_1':'i','pos_2':'i','pos_3':'~'},'jmpr': {'pos_1':'$','pos_2':'$','pos_3':'/'},'branchr': {'pos_1':'$','pos_2':'$','pos_3':'~'},'ldi': {'pos_1':'i','pos_2':'/','pos_3':'$'},
+    'mov': {'pos_1':'$','pos_2':'/','pos_3':'$'},'rldi': {'pos_1':'i','pos_2':'@','pos_3':'@'},'str': {'pos_1':'$','pos_2':'@','pos_3':'@'},'ldr': {'pos_1':'@','pos_2':'@','pos_3':'$'},'pin': {'pos_1':'&','pos_2':'/','pos_3':'$'},'pout': {'pos_1':'$','pos_2':'/','pos_3':'&'},'pinr': {'pos_1':'&','pos_2':'@','pos_3':'@'},'poutr': {'pos_1':'@','pos_2':'@','pos_3':'&'},
+    'incr': {'pos_1':'$','pos_2':'/','pos_3':'$'},'decr': {'pos_1':'$','pos_2':'/','pos_3':'$'},'mult': {'pos_1':'$','pos_2':'$','pos_3':'$'},'div': {'pos_1':'$','pos_2':'$','pos_3':'$'},'mod': {'pos_1':'$','pos_2':'$','pos_3':'$'},'sqr': {'pos_1':'$','pos_2':'/','pos_3':'$'},'sqrt': {'pos_1':'$','pos_2':'/','pos_3':'$'},'cmpr': {'pos_1':'$','pos_2':'$','pos_3':'~'},
+    'lflgre': {'pos_1':'~','pos_2':'/','pos_3':'$'},'lflgra': {'pos_1':'~','pos_2':'/','pos_3':'@'},'lpre': {'pos_1':'/','pos_2':'/','pos_3':'/'},'rpre': {'pos_1':'/','pos_2':'/','pos_3':'/'},'lpra': {'pos_1':'/','pos_2':'/','pos_3':'/'},'rpra': {'pos_1':'/','pos_2':'/','pos_3':'/'},'psh': {'pos_1':'/','pos_2':'/','pos_3':'/'},'pop': {'pos_1':'/','pos_2':'/','pos_3':'/'},
+    'call': {'pos_1':'/','pos_2':'/','pos_3':'/'},'rtrn': {'pos_1':'/','pos_2':'/','pos_3':'/'},'rnd': {'pos_1':'$','pos_2':'$','pos_3':'$'},'swp': {'pos_1':'$','pos_2':'$','pos_3':'$'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},
+    '': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'': {'pos_1':'/','pos_2':'/','pos_3':'/'},'stl': {'pos_1':'/','pos_2':'/','pos_3':'/'},'hlt': {'pos_1':'/','pos_2':'/','pos_3':'/'}
+}
+
+# Prefix to description mapping
+prefix_description = {
+    '$': 'Register Address / Pointer towards Register Address',
+    '@': 'RAM Address / Pointer towards RAM Address',
+    '&':'I/O Port Address',
+    '/':'No Operand',
+    'i':'Immediate',
+    '~':'Flag' 
+}
+
+# Main
+max_lines = 0
+input_a = 0
+stop = 0
+input_lines = []  # Initialize an empty list to hold the input lines
+ 
+# Talks to the user
+def talk():
+    print()
+    print("| This is the Assembler for the Juggernaut CPU, made entirely in Minecraft.")
+    print("| Juggernaut has been built by: Jobe, WildScaryFox, JediZach, Saturnxcode, Tarmalot and Death_Slice")
+    print()
+    t.sleep(.5)
+    print("How many Lines of Code do you need (the maximum is 65536 lines):")
+
+# Take input from user and convert str to int
+def LineNumber():
+    global input_a
+    try: 
+        input_a = int(input())
+        return
+    except ValueError:
+        print()
+        print("That is not a Number")
+        print("Please try again")
+        LineNumber()
+
+talk()
+LineNumber()
+
+def check_line():
+    global stop
+    # Checks whether the number of lines is allowed
+    if input_a > 65536:
+        print()
+        print("The number", input_a, "is above the limit of 65536")
+        stop += 1
+        return
+    elif input_a < 0:
+        print()
+        print("The number", input_a, "is negative")
+        stop += 1
+        return
+    else: 
+        stop = 0
+
+check_line()
+
+def is_valid_prefix(opcode, operand_prefix, operand_position): # Check if the prefix of the Operands is valid
+    if opcode in op_code_list: # Check if the Opcode itself is valid
+        allowed_prefix = operand_list[opcode].get(operand_position)
+        if allowed_prefix == operand_prefix:
+            return True
+    return False
+
+# Helper function to convert operand to binary
+def operand_to_binary(operand):
+    if operand =='/':
+        return '00000000'
+    value =int(operand[1:])
+    try:
+        if 0 <= value <255:
+            if operand.startswith('$'):
+                # Assuming register addresses are in the form $0, $1, ..., $15 and need to be 4-bit binary -> first 4 bits of reg will always be 0000XXXX
+                return format(int(operand[1:]), '08b')
+            elif operand.startswith('@'):
+                # Assuming RAM needs to be treated as immediate values
+                return format(int(operand[1:]), '08b')  
+            elif operand.startswith('&'):
+                # Assuming IO needs to be treated as immediate values
+                return format(int(operand[1:]), '08b')
+            elif operand.startswith('i'):
+                # immediate
+                return format(int(operand[1:]), '08b')
+            else: 
+                print(f"Unknown Operand format in {operand}")
+        elif value > 255:
+            print(f"The Operand {value} is bigger than 255.")
+        elif value < 0:
+            print(f"The Operand {value} is smaller than 0.")
+    except ValueError as e:
+        print(f"Error assembling line {index}: {e}")
+
+def display_inputs(inputs):
+    # Function to display current inputs
+    print("\nCurrent Inputs:")
+    for index, line in enumerate(inputs, start=+1):
+        print(f"{index}: {line}")
+    print()
+
+def assemble(input_lines):
+    for index, line in enumerate(input_lines, start=1):
+        tokens = line.split()
+        if tokens:
+            opcode = tokens[0]
+            operands = tokens[1:]
+            if opcode in op_code_list:
+                try:
+                    binary_opcode = format(int(op_code_list[opcode]), '08b')
+                    binary_operands = []
+                    for i,operands in enumerate(operands):
+                        operand_prefix = operands[0]
+                        operand_position = f'pos_{(1+i)}' # Generates reg_a, reg_b, reg_c
+                        binary_operands.append(operand_to_binary(operands))
+                        if is_valid_prefix(opcode, operand_prefix, operand_position):
+                            # Combine the binary parts
+                            final_binary_instruction = binary_opcode + ''.join(binary_operands)
+                            # Format the final binary instruction to be 4 8-bit strings
+                            formatted_instruction = ' '.join(final_binary_instruction[i:i+8] for i in range(0, len(final_binary_instruction), 8))
+                        else:
+                            print(f"Invalid prefix '{operand_prefix}'for {operand_position} of {opcode} instruction in line {index}.")
+                            return()
+                    print(formatted_instruction)
+                except ValueError as e:
+                        print(f"Error assembling line {index}: {e} with {operand_prefix} at {operand_position}")
+                        return()
+            else:
+                print(f"Unknown opcode: '{opcode}'")
+                return()
+    print()
+    print("You can now copy this into the Schematic Generator")
+
+if stop == 0:
+    print()
+    print("The ISA:")
+    print()
+    print("\n".join(op_code_list.keys())) 
+    print()
+    print("Please enter up to", input_a, "lines of input (Press Enter twice to finish early):")
+    
+    for i in range(1, input_a + 1):   # Read up to 65536 lines of input from the Terminal
+        try:
+            line = input(f"{i} | ")
+            if line == "":
+                break
+            input_lines.append(line)
+        except EOFError:
+            break
+    
+    for index, line in enumerate(input_lines, start=1):
+        # Assign each line to a new variable
+        globals()[f"line_{index}"] = line
+    
+    print("Here is the code you wrote (To verify):")
+    print()
+    # Print the variables to verify
+    for index in range(1, len(input_lines)+1):
+        print(f"{index} |", globals()[f"line_{index}"])
+    
+    while True:
+        print("Press Enter to continue or press # to stop and edit the Code.")
+        action = input().strip()
+        
+        if action == '':  # Check if the input is the Enter key (empty string)
+            print("Enter key detected, Assembling your Code.")
+            print()
+            assemble(input_lines)  
+            break
+        elif action == '#':
+            print("# key detected, you can now edit your Code")
+            display_inputs(input_lines)
+            edit_index = input("Enter the line number to edit (or 'c' to continue): ").strip()
+            
+            if edit_index.lower() == 'c':
+                continue
+            elif edit_index.isdigit() and 1 <= int(edit_index) <= len(input_lines):
+                new_input = input(f"Edit line {edit_index}: ")
+                input_lines[int(edit_index) - 1] = new_input
+                display_inputs(input_lines)
+            else:
+                print("Invalid line number.")
+        else:
+            print("Invalid input, please press Enter to continue or # to edit the Code.")
