@@ -7,7 +7,7 @@
 import time as t
 
 # Prefixes
-# $ -> Register Address  #todo replace $ with r1...?
+# $ -> Register Address  
 # @ -> Ram Address
 # & -> I/O Port Address
 # / -> No Operand in that position
