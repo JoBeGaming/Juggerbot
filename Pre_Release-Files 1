@@ -12,6 +12,7 @@ import time as t
 # & -> I/O Port Address
 # / -> No Operand in that position
 # i -> Immediate
+# ~ -> Flags
  
 # ISA OpCodeList
 op_code_list = {
