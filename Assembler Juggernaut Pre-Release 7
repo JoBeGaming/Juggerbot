@@ -166,12 +166,11 @@ def assemble(input_lines):
                 except ValueError as e:
                         print(f"Error assembling line {index}: {e} with {operand_prefix} at {operand_position}")
                         return()
+            elif opcode == '#':
+                print("00000000 00000000 00000000 00000000")
             else:
-                if opcode == '#':
-                    print("00000000 00000000 00000000 00000000")
-                else:
-                    print(f"Unknown opcode: '{opcode}'")
-                    return()
+                print(f"Unknown opcode: '{opcode}'")
+                return()
         else: 
             print(f"The line {index} is bigger than 65536")
             return()
