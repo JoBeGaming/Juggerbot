@@ -143,7 +143,7 @@ def display_inputs(inputs):
 def assemble(input_lines):
     for index, line in enumerate(input_lines, start=1):
         tokens = line.split()
-        if tokens:
+        if tokens and index <= 65536:
             opcode = tokens[0]
             operands = tokens[1:]
             if opcode in op_code_list:
@@ -152,7 +152,7 @@ def assemble(input_lines):
                     binary_operands = []
                     for i,operands in enumerate(operands):
                         operand_prefix = operands[0]
-                        operand_position = f'pos_{(1+i)}' # Generates reg_a, reg_b, reg_c
+                        operand_position = f'pos_{(1+i)}' # Generates position_a, position_b and position_c
                         binary_operands.append(operand_to_binary(operands))
                         if is_valid_prefix(opcode, operand_prefix, operand_position):
                             # Combine the binary parts
@@ -166,11 +166,15 @@ def assemble(input_lines):
                 except ValueError as e:
                         print(f"Error assembling line {index}: {e} with {operand_prefix} at {operand_position}")
                         return()
-            elif opcode == '#':
-                print("00000000 00000000 00000000 00000000")
             else:
-                print(f"Unknown opcode: '{opcode}'")
-                return()
+                if opcode == '#':
+                    print("00000000 00000000 00000000 00000000")
+                else:
+                    print(f"Unknown opcode: '{opcode}'")
+                    return()
+        else: 
+            print(f"The line {index} is bigger than 65536")
+            return()
     print()
     print("You can now copy this into the Schematic Generator")
 
