@@ -1,0 +1,320 @@
+# This is the Assembler for the Juggernaut CPU in Minecraft (called Juggerbot)
+# Build by Jobe, WildScaryFox, JediZach, Saturnxcode, Tarmalot and Death_Slice
+# Code written by Jobe
+
+
+# Imports
+import time as t
+
+# Prefixes
+# i -> Immediate
+# ~ -> Flags
+# $ -> Register Address / Pointer towards Registers
+# @ -> Ram Address / Pointer towards Ram
+# & -> I/O Port Address
+# / -> No Operand in that position
+
+# If a LINE starts with a # OR a ; the following will be a comment
+# Definitions are in the format of:
+# .def name
+# .part ...
+# .part ...
+# .run name
+# and can also be like:
+# .def name
+# .part ...
+# .part .run previous_def
+# .run name
+
+ 
+# ISA OpCodeList
+op_code_list = {
+    "nop": "0", "add": "1", "sub": "2", "nota": "3", "neg": "4","imp": "5", "nimp": "6", "and": "7", 
+    "or": "8","xor": "9","nand": "10", "nor": "11", "xnor": "12", "bsu": "13", "bsd": "14","bsur": "15",
+    "bsdr": "16","addca": "17","addi":"18","subi":"19","jmp": "20","branch": "21", "jmpr": "22", "branchr": "23",
+    "ldi": "24","mov": "25","rldi": "26","str": "27","ldr": "28","pin": "29","pout": "30","pinr": "31",
+    "poutr": "32","incr": "33","decr": "34","mult": "35","div": "36","mod": "37","sqr": "38","sqrt": "39",
+    "cmpr": "40","lflgre": "41","lflgra": "42","lpre": "43","rpre": "44","lpra": "45","rpra": "46","psh": "47",
+    "pop": "48","call": "49","rtrn": "50","rnd": "51","swp": "52","": "53","": "54","": "55",
+    "": "56","": "57","": "58","": "59","": "60","": "61","stl": "62","hlt": "63"
+}
+ 
+# ISA Contents
+operand_list = {
+   "nop": {"pos_1":"/","pos_2":"/","pos_3":"/"},"add": {"pos_1":"$","pos_2":"$","pos_3":"$"},"sub": {"pos_1":"$","pos_2":"$","pos_3":"$"},"nota": {"pos_1":"$","pos_2":"/","pos_3":"$"},"neg": {"pos_1":"$","pos_2":"/","pos_3":"$"},"imp": {"pos_1":"$","pos_2":"$","pos_3":"$"},"nimp": {"pos_1":"$","pos_2":"$","pos_3":"$"},"and": {"pos_1":"$","pos_2":"$","pos_3":"$"},
+    "or": {"pos_1":"$","pos_2":"$","pos_3":"$"},"xor": {"pos_1":"$","pos_2":"$","pos_3":"$"},"nand": {"pos_1":"$","pos_2":"$","pos_3":"$"},"nor": {"pos_1":"$","pos_2":"$","pos_3":"$"},"xnor": {"pos_1":"$","pos_2":"$","pos_3":"$"},"bsu": {"pos_1":"$","pos_2":"$","pos_3":"$"},"bsd": {"pos_1":"$","pos_2":"$","pos_3":"$"},"bsur": {"pos_1":"$","pos_2":"$","pos_3":"$"},
+    "bsdr": {"pos_1":"$","pos_2":"$","pos_3":"$"},"addca": {"pos_1":"$","pos_2":"$","pos_3":"$"},"addi": {"pos_1":"i","pos_2":"$","pos_3":"$"},"subi":{"pos_1":"i","pos_2":"$","pos_3":"$"},"jmp": {"pos_1":"i","pos_2":"i","pos_3":"/"},"branch": {"pos_1":"i","pos_2":"i","pos_3":"~"},"jmpr": {"pos_1":"$","pos_2":"$","pos_3":"/"},"branchr": {"pos_1":"$","pos_2":"$","pos_3":"~"},"ldi": {"pos_1":"i","pos_2":"/","pos_3":"$"},
+    "mov": {"pos_1":"$","pos_2":"/","pos_3":"$"},"rldi": {"pos_1":"i","pos_2":"@","pos_3":"@"},"str": {"pos_1":"$","pos_2":"@","pos_3":"@"},"ldr": {"pos_1":"@","pos_2":"@","pos_3":"$"},"pin": {"pos_1":"&","pos_2":"/","pos_3":"$"},"pout": {"pos_1":"$","pos_2":"/","pos_3":"&"},"pinr": {"pos_1":"&","pos_2":"@","pos_3":"@"},"poutr": {"pos_1":"@","pos_2":"@","pos_3":"&"},
+    "incr": {"pos_1":"$","pos_2":"/","pos_3":"$"},"decr": {"pos_1":"$","pos_2":"/","pos_3":"$"},"mult": {"pos_1":"$","pos_2":"$","pos_3":"$"},"div": {"pos_1":"$","pos_2":"$","pos_3":"$"},"mod": {"pos_1":"$","pos_2":"$","pos_3":"$"},"sqr": {"pos_1":"$","pos_2":"/","pos_3":"$"},"sqrt": {"pos_1":"$","pos_2":"/","pos_3":"$"},"cmpr": {"pos_1":"$","pos_2":"$","pos_2":"$","pos_3":"~"},
+    "lflgre": {"pos_1":"~","pos_2":"/","pos_3":"$"},"lflgra": {"pos_1":"~","pos_2":"/","pos_3":"@"},"lpre": {"pos_1":"/","pos_2":"/","pos_3":"/"},"rpre": {"pos_1":"/","pos_2":"/","pos_3":"/"},"lpra": {"pos_1":"/","pos_2":"/","pos_3":"/"},"rpra": {"pos_1":"/","pos_2":"/","pos_3":"/"},"psh": {"pos_1":"/","pos_2":"/","pos_3":"/"},"pop": {"pos_1":"/","pos_2":"/","pos_3":"/"},
+    "call": {"pos_1":"/","pos_2":"/","pos_3":"/"},"rtrn": {"pos_1":"/","pos_2":"/","pos_3":"/"},"rnd": {"pos_1":"$","pos_2":"$","pos_3":"$"},"swp": {"pos_1":"$","pos_2":"$","pos_3":"$"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},
+    "": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"": {"pos_1":"/","pos_2":"/","pos_3":"/"},"stl": {"pos_1":"/","pos_2":"/","pos_3":"/"},"hlt": {"pos_1":"/","pos_2":"/","pos_3":"/"}
+}
+
+# The Character Set (Harder to show characters are spelled in English, Capitals are ignored, Spaces are replaced by underscores)
+char_set = {
+    "null":"0","_":"1","/":"2",".":"3",",":"4",":":"5",";":"6","*":"7","\"":"8","'":"9","!":"10","?":"11","@":"12","#":"13","€":"14","£":"15","¥":"16","$":"17","¢":"18","&":"19","~":"20","`":"21","|":"22","point":"23","§":"24","°":"25","\\":"26","alpha":"27","beta":"28","gamma":"29","∆":"30","epsilon":"31",
+    "0":"32","1":"33","2":"34","3":"35","4":"36","5":"37","6":"38","7":"39","8":"40","9":"41","+":"42","-":"43","×":"44","÷":"45","^":"46","√":"47","=":"48","≠":"49","<":"50",">":"51","(":"52",")":"53","{":"54","}":"55","[":"56","]":"57","%":"58","pi":"59","checkmark":"60","middle":"61","box":"62","square":"63",
+    "a":"64","b":"65","c":"66","d":"67","e":"68","f":"69","g":"70","h":"71","i":"72","j":"73","k":"74","l":"75","m":"76","n":"77","o":"78","p":"79","q":"80","r":"81","s":"82","t":"83","u":"84","v":"85","w":"86","x":"87","y":"88","z":"89","arrow_top":"90","arrow_bottom":"91","arrow_left":"92","arrow_right":"93","top_line":"94","left_line":"95",
+    "A":"96","B":"97","C":"98","D":"99","E":"100","F":"101","G":"102","H":"103","I":"104","J":"105","K":"106","L":"107","M":"108","N":"109","O":"110","P":"111","Q":"112","R":"113","S":"114","T":"115","U":"116","V":"117","W":"118","X":"119","Y":"120","Z":"121","arrow_line_bottom":"122","arrow_line_top":"123","arrow_line_left":"124","arrow_line_right":"125","bottom_line":"126","right_line":"127"
+}
+
+# Main
+stop = False 
+index = 0
+global formatted_instruction
+formatted_instruction = False
+global input_lines
+input_lines = []  # Initialize an empty list to hold the input lines
+custom_opcodes = {} # Initialize an empty list to hold the definitions
+ 
+# Talks to the user
+def talk():
+    print()
+    print("| This is the Assembler for the Juggernaut CPU, made entirely in Minecraft.")
+    print("| Juggernaut has been built by: Jobe, WildScaryFox, JediZach, Saturnxcode, Tarmalot and Death_Slice")
+    print()
+    
+talk()
+
+def is_valid_prefix(opcode, operand_prefix, operand_position): # Check if the prefix of the Operands is valid
+    if opcode in op_code_list: # Check if the Opcode itself is valid
+        allowed_prefix = operand_list[opcode].get(operand_position)
+        if allowed_prefix == operand_prefix:
+            return True
+    return False
+
+# Helper function to convert operand to binary
+def operand_to_binary(operand):
+    global stop, char_token  
+    if operand == "/":
+        return "00000000"
+    elif opcode in {"pout","ldi","rldi"} and operand_position == "pos_1" and operand_prefix == "i":
+        try:
+            if operand:
+                char_token = operand[2]
+                if char_token in char_set: return format(int(char_set[char_token]), "08b")
+                else: 
+                    match operand.lstrip("i\"").rstrip("\""):
+                        case "null" | "space": return "00000000"
+                        case "euro": return "00001111"
+                        case "pound": return "00010000"
+                        case "yen": return "00010001"
+                        case "dollar": return "00010010"
+                        case "cent": return "00010010"
+                        case "point": return "00011000"
+                        case "paragraph": return "00011001" 
+                        case "alpha": return "00011100"
+                        case "beta": return "00011101"
+                        case "gamma": return "00011110"
+                        case "delta": return "00011111"
+                        case "epsilon" | "sum": return "00100000"
+                        case "mult" | "multiply": return "00101100"
+                        case "div" | "divide": return "00101101"
+                        case "sqrt" | "square_root": return "00101111"
+                        case "not_equal": return "00110001"
+                        case "pi": return "00111011"
+                        case "checkmark": return "00111100"
+                        case "middle": return "00111101"
+                        case "box": return "00111110"
+                        case "square": return "00111111"
+                        case "arrow_top": return "01011010"
+                        case "arrow_bottom": return "01011011"
+                        case "arrow_left": return "01011100"
+                        case "arrow_right": return "01011101"
+                        case "arrow_top_line": return "01111010"
+                        case "arrow_bottom_line": return "01111011"
+                        case "arrow_left_line": return "01111100"
+                        case "arrow_right_line": return "01111101"
+                        case "top_line": return "01011110"
+                        case "bottom_line": return "01111110"
+                        case "left_line": return "01011111"
+                        case "right_line": return "01111111"
+                    character = operands.lstrip("i\"").rstrip("\"")
+                    if not stop: print(f"The Character {character} is not in the Character set.") 
+                    stop = True
+                    return "00000000"   
+        except IndexError: pass
+    try:
+        value =int(operand[1:])
+        if 0 <= value <255:
+            if operand.startswith("$"):
+                # Assuming register addresses are in the form $0, $1, ..., $15 and need to be 4-bit binary -> first 4 bits of reg will always be 0000XXXX
+                return format(int(operand[1:]), "08b")
+            elif operand.startswith("@"):
+                # Assuming RAM needs to be treated as immediate values
+                return format(int(operand[1:]), "08b")  
+            elif operand.startswith("&"):
+                # Assuming IO needs to be treated as immediate values
+                return format(int(operand[1:]), "08b")
+            elif operand.startswith("i"):
+                # Immediate value
+                return format(int(operand[1:]), "08b")
+            elif operand.startswith("~"):
+                # Assuming Flags need to be treated as immediate values
+                return format(int(operand[1:]), "08b")
+            elif not stop: 
+                print(f"Unknown Operand format in {operand} at line {index}")
+                stop = True
+        elif value > 255 and not stop:
+            print(f"The Operand {value} is bigger than 255.")
+            stop = True
+        elif value < 0 and not stop:
+            print(f"The Operand {value} is smaller than 0.")
+            stop = True
+    except ValueError as Error:
+        if not stop: print(f"Error assembling operand {operand} in line {index}: {Error}")
+        stop = True
+
+# Helper function for definitions
+def opcode_definition(part, name):
+    global part_of_def, stop, index, formatted_instruction, operand_position, opcode, operands, operand_prefix, previous_operand_cmpr
+    if stop:
+        return 
+    elif part == ".def":
+        if not name and not stop:
+            print(f"Syntax error: .def shoud be followed by a single name at line {index}")
+            stop = True
+            return
+        part_of_def = True
+        global def_name
+        def_name = tokens[1]
+        global def_list
+        def_list = []
+        custom_opcodes[def_name] = def_list
+    elif part == ".part" and part_of_def:
+        def_list.append(tokens[1:])
+    elif part == ".run" and not part_of_def:
+            if tokens[1] in custom_opcodes:
+                for component in custom_opcodes[tokens[1]]:
+                    opcode = component[0]
+                    operands = component[1:]
+                    if opcode in op_code_list:
+                        try:
+                            binary_opcode = format(int(op_code_list[opcode]), "08b")
+                            binary_operands = []
+                            for iOperands,operands in enumerate(operands):
+                                operand_prefix = operands[0]
+                                operand_position = f"pos_{(1+iOperands)}" # Generates position_a, position_b and position_c
+                                binary_operands.append(operand_to_binary(operands))
+                                if is_valid_prefix(opcode, operand_prefix, operand_position):
+                                    # Combine the binary parts
+                                    if not stop: final_binary_instruction = binary_opcode + ''.join(binary_operands)
+                                    # Format the final binary instruction to be 4 8-bit strings
+                                    formatted_instruction = ' '.join(final_binary_instruction[i:i+8] for i in range(0, len(final_binary_instruction), 8))
+                                    if opcode == "cmpr" and operand_position == "pos_1": previous_operand_cmpr = operands[1:]
+                                    if opcode == "cmpr" and operand_position == "pos_3" and operands in {"~0","~1","~2","~3","~10","~11"}: 
+                                        formatted_instruction = f"00101000 {format(int(previous_operand_cmpr), '08b')} 00000000 {format(int(operands[1:]), '08b')}" 
+                                elif opcode in {"pout","ldi","rldi"} and operand_position == "pos_1" and operand_prefix == "i": pass
+                                elif operand_position == "pos_4" and operand_prefix in {"#",";"}: pass
+                                elif opcode == "cmpr" and operand_position == "pos_2": pass
+                                elif not stop:
+                                    print(f"Invalid prefix {operand_prefix} for {operand_position} of {opcode} instruction at line {index}.")
+                                    stop = True
+                                    return
+                            if formatted_instruction and iOperands == 2 and not stop:
+                                print(formatted_instruction)
+                        except ValueError as Error:
+                            if not stop: print(f"Error assembling line {index}: {Error} with {operand_prefix} at {operand_position}")
+                            stop = True
+                            return
+                    elif opcode in {"#",";"}:
+                        index = index -1
+                    elif opcode == ".run":
+                        index = index +1
+                        assemble(part)
+            elif not stop:
+                print(f"Unknown .run target {def_name} at line {index}.")
+                stop = True
+    elif not stop:
+        print(f"Syntax error at line {index}.")
+        stop = True
+        return
+
+# Converts the opcode to binary and does the final formatting, as well as checking
+def assemble(input_lines):
+    global index, part_of_def, tokens, stop, opcode, operands, formatted_instruction, operand_position, operand_prefix, previous_operand_cmpr
+    if stop:
+        return 
+    for index, line in enumerate(input_lines):
+        tokens = line.split()
+        if tokens and index <= 65536:
+            opcode = tokens[0]
+            operands = tokens[1:]
+            if opcode in op_code_list:
+                try:
+                    binary_opcode = format(int(op_code_list[opcode]), "08b")
+                    binary_operands = []
+                    for iOperands,operands in enumerate(operands):
+                        operand_prefix = operands[0]
+                        operand_position = f"pos_{(1+iOperands)}" # Generates position_a, position_b and position_c
+                        binary_operands.append(operand_to_binary(operands))
+                        if is_valid_prefix(opcode, operand_prefix, operand_position):
+                            # Combine the binary parts
+                            final_binary_instruction = binary_opcode + ''.join(binary_operands)
+                            # Format the final binary instruction to be 4 8-bit string
+                            formatted_instruction = ' '.join(final_binary_instruction[i:i+8] for i in range(0, len(final_binary_instruction), 8))
+                            if opcode == "cmpr" and operand_position == "pos_1": previous_operand_cmpr = operands[1:]
+                            if opcode == "cmpr" and operand_position == "pos_3" and operands in {"~0","~1","~2","~3","~10","~11"}: 
+                                formatted_instruction = f"00101000 {format(int(previous_operand_cmpr), '08b')} 00000000 {format(int(operands[1:]), '08b')}" 
+                        elif opcode in {"pout","ldi","rldi"} and operand_position == "pos_1" and operand_prefix == "i": pass
+                        elif operand_position == "pos_4" and operand_prefix in {"#",";"}: pass
+                        elif opcode == "cmpr" and operand_position == "pos_2" and operand_prefix == "/": pass
+                        elif not stop:
+                            print(f"Invalid prefix {operand_prefix} for {operand_position} of {opcode} instruction at line {index}.")
+                            stop = True
+                            return
+                    if formatted_instruction and iOperands == 2 and not stop:
+                        print(formatted_instruction)
+                except ValueError as Error:
+                    if not stop: print(f"Error assembling line {index}: {Error} with {operand_prefix} at {operand_position}")
+                    stop = True
+                    return
+            elif opcode == "#" or opcode == ";":
+                index = index -1
+            elif opcode in {".def",".part",".run"}:
+                if opcode == ".def":
+                    previous_def = True
+                elif opcode == ".part" and previous_def:
+                    part_of_def = True 
+                elif opcode == ".run":
+                    part_of_def = False
+                elif not previous_def and opcode == ".part" and not stop:
+                    stop = True
+                    print(f"Invalid Syntax: No .def in front of .part in line {index}.")
+                    return
+                index = index -1
+                opcode_definition(opcode, operands)
+            elif input_lines == ".run": opcode_definition(opcode, operands)
+            elif not stop:
+                print(f"Unknown opcode: {opcode} at line {index}.")
+                stop = True
+                return
+        elif index > 65536 and not stop:
+            print(f"The line {index} is beyond the limit of 65536 lines")
+            stop = True
+            return
+    if not stop and formatted_instruction:
+        print()
+        print("You can now copy this into the Schematic Generator")
+        stop = True
+
+# Gets the file path from the user
+def get_file_path():
+    if not stop:
+        t.sleep(.5)
+        print("Paste the File Path of your programm here (Max. of 65536 Lines):")
+        global file_path
+        file_path = input()
+        try:
+            with open(file_path, "r") as f:
+               input_lines = f.readlines()
+            print()
+            print(f"Assembling {file_path}.")
+            assemble(input_lines)
+        except FileNotFoundError:
+            print(f"File {file_path} was not found.")
+            print("Please try again.")
+            get_file_path()
+
+get_file_path()
